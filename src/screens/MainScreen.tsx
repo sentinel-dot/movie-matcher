@@ -62,15 +62,28 @@ const MainScreen: React.FC<Props> = ({ navigation }) => {
 
       // If liked, check for a match
       if (liked) {
-        // In a real app, you'd check for matches with all users
-        // For this MVP, we're just checking for matches with a predefined partner user
-        // Assuming partner_user_id is the ID of the partner user
-        const partner_user_id = 'partner_user_id'; // Replace with actual partner ID in a real app
-        
+        // First get the current user's partner
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('partner_id')
+          .eq('id', state.user.id)
+          .single();
+
+        if (userError) {
+          console.error('Error fetching user data:', userError);
+          return;
+        }
+
+        if (!userData.partner_id) {
+          console.log('No partner set for this user');
+          return;
+        }
+
+        // Check if partner has liked the same movie
         const { data, error: matchError } = await supabase
           .from('swipes')
           .select('*')
-          .eq('user_id', partner_user_id)
+          .eq('user_id', userData.partner_id)
           .eq('media_id', movies[currentIndex].id)
           .eq('liked', true)
           .single();
@@ -85,7 +98,7 @@ const MainScreen: React.FC<Props> = ({ navigation }) => {
           const { error: createMatchError } = await supabase.from('matches').insert({
             media_id: movies[currentIndex].id,
             user1_id: state.user.id,
-            user2_id: partner_user_id,
+            user2_id: userData.partner_id,
           });
 
           if (createMatchError) {
