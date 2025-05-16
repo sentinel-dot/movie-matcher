@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "movie-matcher",
+    "name": "Movie Matcher",
     "slug": "movie-matcher",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,9 +8,9 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#4ecdc4"
     },
     "ios": {
       "supportsTablet": true
@@ -18,12 +18,14 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#4ecdc4"
       },
       "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "description": "A Tinder-like app for movies and TV shows. Find content you both love!",
+    "primaryColor": "#4ecdc4"
   }
 }
