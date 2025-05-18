@@ -25,6 +25,7 @@ export interface Swipe {
   media_id: string;
   liked: boolean;
   created_at: string;
+  match?: boolean; // Optional flag to indicate if this swipe created a match
 }
 
 // Match type
@@ -46,8 +47,8 @@ export interface AuthState {
 
 // Response types
 export interface AuthResponse {
-  error: any;
-  data?: any;
+  user: User;
+  token: string;
 }
 
 export interface DatabaseResponse<T> {

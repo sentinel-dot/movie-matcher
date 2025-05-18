@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Dimensions, Alert } from 'react-native';
 import { Text, IconButton, ActivityIndicator } from 'react-native-paper';
-import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Media } from '../types';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import SwipeableCard from '../components/SwipeableCard';
+import { api } from '../services/api';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -18,24 +18,15 @@ const MainScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const { state } = useAuth();
 
-  // Fetch movies from Supabase
+  // Fetch movies from backend API
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        const { data, error } = await supabase
-          .from('movies')
-          .select('*')
-          .order('id');
-
-        if (error) {
-          console.error('Error fetching movies:', error);
-          Alert.alert('Error', 'Failed to load movies');
-        } else if (data) {
-          setMovies(data);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        Alert.alert('Error', 'Something went wrong');
+        const data = await api.getMovies();
+        setMovies(data);
+      } catch (error: any) {
+        console.error('Error fetching movies:', error);
+        Alert.alert('Error', error.message || 'Failed to load movies');
       } finally {
         setLoading(false);
       }
@@ -49,78 +40,27 @@ const MainScreen: React.FC<Props> = ({ navigation }) => {
     if (!state.user || currentIndex >= movies.length) return;
 
     try {
-      // Record the swipe in Supabase
-      const { error } = await supabase.from('swipes').insert({
-        user_id: state.user.id,
-        media_id: movies[currentIndex].id,
-        liked,
-      });
+      // Record the swipe via API
+      const swipeResponse = await api.createSwipe(movies[currentIndex].id, liked);
 
-      if (error) {
-        console.error('Error recording swipe:', error);
-      }
-
-      // If liked, check for a match
-      if (liked) {
-        // First get the current user's partner
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('partner_id')
-          .eq('id', state.user.id)
-          .single();
-
-        if (userError) {
-          console.error('Error fetching user data:', userError);
-          return;
-        }
-
-        if (!userData.partner_id) {
-          console.log('No partner set for this user');
-          return;
-        }
-
-        // Check if partner has liked the same movie
-        const { data, error: matchError } = await supabase
-          .from('swipes')
-          .select('*')
-          .eq('user_id', userData.partner_id)
-          .eq('media_id', movies[currentIndex].id)
-          .eq('liked', true)
-          .single();
-
-        if (matchError && matchError.code !== 'PGRST116') {
-          // PGRST116 is the error code for "no rows returned"
-          console.error('Error checking for match:', matchError);
-        }
-
-        // If there's a match, record it
-        if (data) {
-          const { error: createMatchError } = await supabase.from('matches').insert({
-            media_id: movies[currentIndex].id,
-            user1_id: state.user.id,
-            user2_id: userData.partner_id,
-          });
-
-          if (createMatchError) {
-            console.error('Error creating match:', createMatchError);
-          } else {
-            // Notify the user of the match
-            Alert.alert(
-              'Match Found!',
-              `You and your partner both liked "${movies[currentIndex].title}"`,
-              [
-                { text: 'Keep Swiping', style: 'cancel' },
-                { text: 'View Matches', onPress: () => navigation.navigate('Matches') }
-              ]
-            );
-          }
-        }
+      // If the swipe created a match, notify the user
+      if (swipeResponse.match) {
+        // Notify the user of the match
+        Alert.alert(
+          'Match Found!',
+          `You and your partner both liked "${movies[currentIndex].title}"`,
+          [
+            { text: 'Keep Swiping', style: 'cancel' },
+            { text: 'View Matches', onPress: () => navigation.navigate('Matches') }
+          ]
+        );
       }
 
       // Move to the next movie
       setCurrentIndex(prevIndex => prevIndex + 1);
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: any) {
+      console.error('Error recording swipe:', error);
+      Alert.alert('Error', error.message || 'Failed to record your choice');
     }
   };
 
@@ -168,7 +108,7 @@ const MainScreen: React.FC<Props> = ({ navigation }) => {
         <IconButton
           icon="account"
           size={30}
-          onPress={() => {}}
+          onPress={() => navigation.navigate('Profile')}
         />
         <Text style={styles.headerTitle}>Movie Matcher</Text>
         <IconButton

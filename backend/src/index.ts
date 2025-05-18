@@ -3,6 +3,10 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import pool from './config/database';
 import authRoutes from './routes/auth';
+import movieRoutes from './routes/movies';
+import swipeRoutes from './routes/swipes';
+import matchRoutes from './routes/matches';
+import userRoutes from './routes/users';
 
 // Load environment variables
 dotenv.config();
@@ -17,6 +21,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/movies', movieRoutes);
+app.use('/api/swipes', swipeRoutes);
+app.use('/api/matches', matchRoutes);
+app.use('/api/users', userRoutes);
 
 // Basic health check route
 app.get('/health', (req: Request, res: Response) => {

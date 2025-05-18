@@ -8,6 +8,7 @@ import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import MainScreen from '../screens/MainScreen';
 import MatchesScreen from '../screens/MatchesScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 // Types
 import { RootStackParamList } from './types';
@@ -31,6 +32,7 @@ const AppNavigator: React.FC = () => {
           <>
             <Stack.Screen name="Main" component={MainScreen} />
             <Stack.Screen name="Matches" component={MatchesScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
           </>
         ) : (
           // Unauthenticated routes

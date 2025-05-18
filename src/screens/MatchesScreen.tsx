@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList, Dimensions, Alert } from 'react-native';
 import { Text, ActivityIndicator, IconButton } from 'react-native-paper';
-import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { Match } from '../types';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import MatchCard from '../components/MatchCard';
+import { api } from '../services/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -22,34 +22,12 @@ const MatchesScreen: React.FC<Props> = ({ navigation }) => {
       if (!state.user) return;
 
       try {
-        // Fetch matches where the current user is either user1 or user2
-        const { data, error } = await supabase
-          .from('matches')
-          .select(`
-            id,
-            media_id,
-            user1_id,
-            user2_id,
-            created_at,
-            media:media_id (
-              id,
-              title,
-              poster_url,
-              genre
-            )
-          `)
-          .or(`user1_id.eq.${state.user.id},user2_id.eq.${state.user.id}`)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching matches:', error);
-          Alert.alert('Error', 'Failed to load matches');
-        } else if (data) {
-          setMatches(data);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        Alert.alert('Error', 'Something went wrong');
+        // Fetch matches from our API
+        const data = await api.getMatches();
+        setMatches(data);
+      } catch (error: any) {
+        console.error('Error fetching matches:', error);
+        Alert.alert('Error', error.message || 'Failed to load matches');
       } finally {
         setLoading(false);
       }
