@@ -2,6 +2,13 @@
 
 Express + PostgreSQL backend for the Movie Matcher application.
 
+backend
+npm run migrate
+npm run dev
+
+frontend
+npx expo start
+
 ## Setup
 
 1. Install dependencies:

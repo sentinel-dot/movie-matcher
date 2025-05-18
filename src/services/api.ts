@@ -1,4 +1,4 @@
-import { User, AuthResponse, Media, Swipe, Match } from '../types';
+import { User, AuthResponse, Media, Swipe, Match, PartnerRequest } from '../types';
 
 const API_URL = 'http://localhost:5001/api';
 
@@ -135,6 +135,29 @@ class ApiService {
       console.error('Error searching for user:', error);
       return null;
     }
+  }
+
+  // Partner request endpoints
+  async createPartnerRequest(recipientEmail: string): Promise<PartnerRequest> {
+    return this.request('/users/partner-requests', {
+      method: 'POST',
+      body: JSON.stringify({ recipient_email: recipientEmail }),
+    });
+  }
+
+  async getPartnerRequests(): Promise<PartnerRequest[]> {
+    return this.request('/users/partner-requests');
+  }
+
+  async getPendingPartnerRequests(): Promise<PartnerRequest[]> {
+    return this.request('/users/partner-requests/pending');
+  }
+
+  async respondToPartnerRequest(requestId: string, status: 'accepted' | 'rejected'): Promise<PartnerRequest> {
+    return this.request('/users/partner-requests/respond', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId, status }),
+    });
   }
 }
 

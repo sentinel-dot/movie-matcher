@@ -38,6 +38,18 @@ export interface Match {
   media?: Media;
 }
 
+// Partner Request type
+export interface PartnerRequest {
+  id: string;
+  requester_id: string;
+  recipient_id: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  created_at: string;
+  updated_at: string;
+  requester_email?: string;
+  recipient_email?: string;
+}
+
 // Auth state type
 export interface AuthState {
   user: User | null;

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, ScrollView } from 'react-native';
-import { Text, Button, TextInput, Avatar, Card, Divider } from 'react-native-paper';
+import { View, StyleSheet, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import { Text, Button, TextInput, Avatar, Card, Divider, List, Badge } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { User } from '../types';
+import { User, PartnerRequest } from '../types';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 
@@ -14,20 +14,43 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [partnerEmail, setPartnerEmail] = useState('');
   const [partner, setPartner] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<PartnerRequest[]>([]);
+  const [sentRequests, setSentRequests] = useState<PartnerRequest[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Fetch current partner on component mount
+  // Fetch data on component mount
   useEffect(() => {
-    const fetchPartner = async () => {
-      try {
-        const partnerData = await api.getPartner();
-        setPartner(partnerData);
-      } catch (error) {
-        console.error('Error fetching partner:', error);
-      }
-    };
-
-    fetchPartner();
+    fetchData();
   }, []);
+
+  // Function to fetch all necessary data
+  const fetchData = async () => {
+    setRefreshing(true);
+    try {
+      // Fetch partner data
+      const partnerData = await api.getPartner();
+      setPartner(partnerData);
+
+      // Fetch partner requests
+      const requests = await api.getPartnerRequests();
+      
+      // Filter pending requests received by the user
+      const pending = requests.filter(
+        req => req.recipient_id === state.user?.id && req.status === 'pending'
+      );
+      setPendingRequests(pending);
+      
+      // Filter requests sent by the user
+      const sent = requests.filter(
+        req => req.requester_id === state.user?.id && req.status === 'pending'
+      );
+      setSentRequests(sent);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Handle logout
   const handleLogout = async () => {
@@ -40,8 +63,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  // Handle setting partner
-  const handleSetPartner = async () => {
+  // Handle sending partner request
+  const handleSendPartnerRequest = async () => {
     if (!partnerEmail.trim()) {
       Alert.alert('Error', 'Please enter a partner email');
       return;
@@ -60,8 +83,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       
       // Confirm with the user
       Alert.alert(
-        'Confirm Partner',
-        `Are you sure you want to set ${partnerEmail} as your partner?`,
+        'Send Partner Request',
+        `Are you sure you want to send a partner request to ${partnerEmail}?`,
         [
           {
             text: 'Cancel',
@@ -72,17 +95,16 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             text: 'Yes',
             onPress: async () => {
               try {
-                // Set the partner using the user ID
-                await api.setPartner(user.id);
+                // Create a partner request
+                await api.createPartnerRequest(partnerEmail);
                 
-                // Refresh the partner data
-                const updatedPartner = await api.getPartner();
-                setPartner(updatedPartner);
+                // Refresh the data
+                await fetchData();
                 
-                Alert.alert('Success', `${partnerEmail} is now your partner!`);
+                Alert.alert('Success', `Partner request sent to ${partnerEmail}!`);
                 setPartnerEmail('');
               } catch (error: any) {
-                Alert.alert('Error', error.message || 'Failed to set partner');
+                Alert.alert('Error', error.message || 'Failed to send partner request');
               } finally {
                 setLoading(false);
               }
@@ -92,6 +114,26 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       );
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to search for user');
+      setLoading(false);
+    }
+  };
+
+  // Handle responding to a partner request
+  const handleRespondToRequest = async (requestId: string, status: 'accepted' | 'rejected') => {
+    try {
+      setLoading(true);
+      await api.respondToPartnerRequest(requestId, status);
+      
+      // Refresh data
+      await fetchData();
+      
+      Alert.alert(
+        'Success',
+        `Partner request ${status === 'accepted' ? 'accepted' : 'rejected'}`
+      );
+    } catch (error: any) {
+      Alert.alert('Error', error.message || `Failed to ${status} partner request`);
+    } finally {
       setLoading(false);
     }
   };
@@ -156,19 +198,85 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
                 mode="outlined"
                 style={styles.input}
               />
-              <Button 
-                mode="contained" 
-                onPress={handleSetPartner}
+              <Button
+                mode="contained"
+                onPress={handleSendPartnerRequest}
                 loading={loading}
                 disabled={loading}
                 style={styles.button}
               >
-                Set Partner
+                Send Partner Request
               </Button>
             </>
           )}
         </Card.Content>
       </Card>
+
+      {/* Partner Requests Section */}
+      {pendingRequests.length > 0 && (
+        <Card style={styles.card}>
+          <Card.Title
+            title="Partner Requests"
+            right={() => <Badge size={24}>{pendingRequests.length}</Badge>}
+          />
+          <Card.Content>
+            <Text style={styles.partnerTitle}>Pending Requests</Text>
+            {pendingRequests.map((request) => (
+              <List.Item
+                key={request.id}
+                title={request.requester_email}
+                description="Wants to be your partner"
+                right={() => (
+                  <View style={styles.actionButtons}>
+                    <Button
+                      mode="contained"
+                      onPress={() => handleRespondToRequest(request.id, 'accepted')}
+                      style={[styles.actionButton, styles.acceptButton]}
+                      disabled={loading}
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      mode="outlined"
+                      onPress={() => handleRespondToRequest(request.id, 'rejected')}
+                      style={styles.actionButton}
+                      disabled={loading}
+                    >
+                      Decline
+                    </Button>
+                  </View>
+                )}
+              />
+            ))}
+          </Card.Content>
+        </Card>
+      )}
+
+      {/* Sent Requests Section */}
+      {sentRequests.length > 0 && (
+        <Card style={styles.card}>
+          <Card.Title title="Sent Requests" />
+          <Card.Content>
+            {sentRequests.map((request) => (
+              <List.Item
+                key={request.id}
+                title={request.recipient_email}
+                description="Pending response"
+                right={() => (
+                  <Badge>Pending</Badge>
+                )}
+              />
+            ))}
+          </Card.Content>
+        </Card>
+      )}
+
+      {refreshing && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4ecdc4" />
+          <Text>Refreshing...</Text>
+        </View>
+      )}
 
       <Divider style={styles.divider} />
 
@@ -238,6 +346,23 @@ const styles = StyleSheet.create({
   },
   divider: {
     marginVertical: 20,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  actionButton: {
+    marginLeft: 8,
+    marginTop: 0,
+  },
+  acceptButton: {
+    backgroundColor: '#4ecdc4',
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

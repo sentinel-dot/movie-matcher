@@ -19,6 +19,17 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Partner requests table
+CREATE TABLE IF NOT EXISTS partner_requests (
+  id SERIAL PRIMARY KEY,
+  requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recipient_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(requester_id, recipient_id)
+);
+
 -- Function to automatically update updated_at column
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -29,8 +40,16 @@ END;
 $$ language 'plpgsql';
 
 -- Trigger to automatically update updated_at
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at
   BEFORE UPDATE ON users
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger to automatically update updated_at for partner_requests
+DROP TRIGGER IF EXISTS update_partner_requests_updated_at ON partner_requests;
+CREATE TRIGGER update_partner_requests_updated_at
+  BEFORE UPDATE ON partner_requests
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
@@ -62,6 +81,9 @@ CREATE INDEX IF NOT EXISTS swipes_media_id_idx ON swipes(media_id);
 CREATE INDEX IF NOT EXISTS matches_user1_id_idx ON matches(user1_id);
 CREATE INDEX IF NOT EXISTS matches_user2_id_idx ON matches(user2_id);
 CREATE INDEX IF NOT EXISTS matches_media_id_idx ON matches(media_id);
+CREATE INDEX IF NOT EXISTS partner_requests_requester_id_idx ON partner_requests(requester_id);
+CREATE INDEX IF NOT EXISTS partner_requests_recipient_id_idx ON partner_requests(recipient_id);
+CREATE INDEX IF NOT EXISTS partner_requests_status_idx ON partner_requests(status);
 
 -- Insert sample movie data
 INSERT INTO movies (title, poster_url, genre) VALUES

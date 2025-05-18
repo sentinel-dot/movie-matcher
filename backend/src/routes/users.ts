@@ -1,6 +1,14 @@
 import express, { Router } from 'express';
 import { RequestHandler } from 'express';
-import { setPartner, getPartner, searchUserByEmail } from '../controllers/users';
+import {
+  setPartner,
+  getPartner,
+  searchUserByEmail,
+  createPartnerRequest,
+  getPartnerRequests,
+  getPendingPartnerRequests,
+  respondToPartnerRequest
+} from '../controllers/users';
 import { auth } from '../middleware/auth';
 
 const router: Router = express.Router();
@@ -12,5 +20,11 @@ router.use(auth as RequestHandler);
 router.post('/partner', setPartner as RequestHandler);
 router.get('/partner', getPartner as RequestHandler);
 router.get('/search', searchUserByEmail as RequestHandler);
+
+// Partner request routes
+router.post('/partner-requests', createPartnerRequest as RequestHandler);
+router.get('/partner-requests', getPartnerRequests as RequestHandler);
+router.get('/partner-requests/pending', getPendingPartnerRequests as RequestHandler);
+router.post('/partner-requests/respond', respondToPartnerRequest as RequestHandler);
 
 export default router;
