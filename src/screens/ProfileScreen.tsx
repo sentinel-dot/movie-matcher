@@ -6,6 +6,7 @@ import { api } from '../services/api';
 import { User, PartnerRequest } from '../types';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import { AlertService } from '../services/alertService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
@@ -65,58 +66,55 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   // Handle sending partner request
   const handleSendPartnerRequest = async () => {
-    if (!partnerEmail.trim()) {
-      Alert.alert('Error', 'Please enter a partner email');
+  if (!partnerEmail.trim()) {
+    AlertService.alert('Error', 'Please enter a partner email');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    // First, search for the user by email
+    const user = await api.searchUserByEmail(partnerEmail);
+    console.log(partnerEmail);
+    console.log(user);
+    
+    if (!user) {
+      AlertService.alert('Error', `No user found with email ${partnerEmail}`);
+      setLoading(false);
       return;
     }
-
-    setLoading(true);
-    try {
-      // First, search for the user by email
-      const user = await api.searchUserByEmail(partnerEmail);
-      
-      if (!user) {
-        Alert.alert('Error', `No user found with email ${partnerEmail}`);
-        setLoading(false);
-        return;
-      }
-      
-      // Confirm with the user
-      Alert.alert(
-        'Send Partner Request',
-        `Are you sure you want to send a partner request to ${partnerEmail}?`,
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-            onPress: () => setLoading(false)
-          },
-          {
-            text: 'Yes',
-            onPress: async () => {
-              try {
-                // Create a partner request
-                await api.createPartnerRequest(partnerEmail);
-                
-                // Refresh the data
-                await fetchData();
-                
-                Alert.alert('Success', `Partner request sent to ${partnerEmail}!`);
-                setPartnerEmail('');
-              } catch (error: any) {
-                Alert.alert('Error', error.message || 'Failed to send partner request');
-              } finally {
-                setLoading(false);
-              }
-            }
-          }
-        ]
-      );
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to search for user');
-      setLoading(false);
-    }
-  };
+    
+    // Confirm with the user
+    console.log("before alert");
+    
+    AlertService.confirm(
+      'Send Partner Request',
+      `Are you sure you want to send a partner request to ${partnerEmail}?`,
+      async () => {
+        try {
+          // Create a partner request
+          console.log("before create request");
+          await api.createPartnerRequest(partnerEmail);
+          
+          // Refresh the data
+          await fetchData();
+          
+          AlertService.alert('Success', `Partner request sent to ${partnerEmail}!`);
+          setPartnerEmail('');
+        } catch (error: any) {
+          AlertService.alert('Error', error.message || 'Failed to send partner request');
+        } finally {
+          setLoading(false);
+        }
+      },
+      () => setLoading(false)
+    );
+  } catch (error: any) {
+    AlertService.alert('Error', error.message || 'Failed to search for user');
+    setLoading(false);
+  }
+};
 
   // Handle responding to a partner request
   const handleRespondToRequest = async (requestId: string, status: 'accepted' | 'rejected') => {
