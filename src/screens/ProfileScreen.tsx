@@ -132,6 +132,32 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const handleRemovePartner = async () => {
+    if (!partner) return;
+    
+    AlertService.confirm(
+      'Remove Partner',
+      `Are you sure you want to remove ${partner.email} as your partner? This will disconnect your accounts and you will no longer see each other's movie matches.`,
+      async () => {
+        try {
+          setLoading(true);
+          // Call the API to remove the partner
+          await api.removePartner();
+          
+          // Refresh the data to update the UI
+          await fetchData();
+          
+          AlertService.alert('Success', 'Partner has been removed successfully');
+        } catch (error: any) {
+          AlertService.alert('Error', error.message || 'Failed to remove partner');
+        } finally {
+          setLoading(false);
+        }
+      }
+    );
+  };
+
+
   // Extract initials from email for avatar
   const getInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
@@ -219,15 +245,13 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
                     AlertService.confirm(
                       'Remove Partner',
                       'Are you sure you want to remove your partner?',
-                      async () => {
-                        // This would require a removePartner API endpoint
-                        AlertService.alert('Feature not implemented', 'Partner removal is not yet implemented');
-                      }
+                      handleRemovePartner
                     );
                   }}
                   style={styles.removeButton}
                   textColor="#f44336"
                   icon="account-remove"
+                  disabled={loading}
                 >
                   Remove Partner
                 </Button>

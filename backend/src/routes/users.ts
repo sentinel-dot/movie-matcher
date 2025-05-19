@@ -3,6 +3,7 @@ import { RequestHandler } from 'express';
 import {
   setPartner,
   getPartner,
+  removePartner,
   searchUserByEmail,
   createPartnerRequest,
   getPartnerRequests,
@@ -19,6 +20,7 @@ router.use(auth as RequestHandler);
 // Protected routes
 router.post('/partner', setPartner as RequestHandler);
 router.get('/partner', getPartner as RequestHandler);
+router.delete('/partner', removePartner as RequestHandler);
 router.get('/search', searchUserByEmail as RequestHandler);
 
 // Partner request routes

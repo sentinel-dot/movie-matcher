@@ -257,6 +257,57 @@ export const getPartner = async (req: Request, res: Response) => {
   }
 };
 
+
+
+// Remove partner for the current user
+export const removePartner = async (req: Request, res: Response) => {
+  const userId = req.user?.userId; // From auth middleware
+  
+  try {
+    // Get user's current partner
+    const userResult = await pool.query(
+      'SELECT partner_id FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    const partnerId = userResult.rows[0]?.partner_id;
+    
+    if (!partnerId) {
+      return res.status(400).json({ error: 'You currently do not have a partner' });
+    }
+    
+    // Update both users to remove partner relationship
+    // First, update the current user
+    await pool.query(
+      'UPDATE users SET partner_id = NULL, updated_at = NOW() WHERE id = $1',
+      [userId]
+    );
+    
+    // Then, update the partner
+    await pool.query(
+      'UPDATE users SET partner_id = NULL, updated_at = NOW() WHERE id = $1',
+      [partnerId]
+    );
+
+    // Finally, delete from partner_request table
+    await pool.query(
+      'DELETE FROM partner_requests WHERE requester_id = $1 OR recipient_id = $1',
+      [userId]
+    );
+    
+    // Return updated user
+    const result = await pool.query(
+      'SELECT id, email, display_name, avatar_url, partner_id, created_at, updated_at FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error removing partner:', error);
+    res.status(500).json({ error: 'Failed to remove partner' });
+  }
+};
+
 // Search for a user by email
 export const searchUserByEmail = async (req: Request, res: Response) => {
   const { email } = req.query;

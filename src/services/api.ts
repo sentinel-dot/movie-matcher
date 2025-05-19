@@ -126,6 +126,12 @@ class ApiService {
   async getPartner(): Promise<User | null> {
     return this.request('/users/partner');
   }
+
+  async removePartner(): Promise<User> {
+  return this.request('/users/partner', {
+    method: 'DELETE',
+  });
+}
   
   // User search endpoint
   async searchUserByEmail(email: string): Promise<User | null> {
