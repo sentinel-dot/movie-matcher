@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, Dimensions, Alert } from 'react-native';
+import { View, StyleSheet, FlatList, Dimensions, Alert, StatusBar } from 'react-native';
 import { Text, ActivityIndicator, IconButton } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
 import { Match } from '../types';
@@ -40,7 +40,7 @@ const MatchesScreen: React.FC<Props> = ({ navigation }) => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#FF6B6B" />
         <Text style={styles.loadingText}>Loading matches...</Text>
       </View>
     );
@@ -50,27 +50,38 @@ const MatchesScreen: React.FC<Props> = ({ navigation }) => {
   if (matches.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No matches yet!</Text>
-        <Text style={styles.emptySubtext}>
-          When you and your partner both like the same movie or show, it will appear here.
-        </Text>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
         <IconButton
           icon="arrow-left"
-          size={30}
+          size={26}
           onPress={() => navigation.navigate('Main')}
-          style={styles.backButton}
+          style={styles.backButtonEmpty}
+          iconColor="#FF6B6B"
         />
+        <View style={styles.emptyContent}>
+          <IconButton
+            icon="movie-off"
+            size={60}
+            iconColor="#DDD"
+          />
+          <Text style={styles.emptyText}>No matches yet!</Text>
+          <Text style={styles.emptySubtext}>
+            When you and your partner both like the same movie or show, it will appear here.
+          </Text>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <View style={styles.header}>
         <IconButton
           icon="arrow-left"
-          size={30}
+          size={24}
           onPress={() => navigation.navigate('Main')}
+          iconColor="#FF6B6B"
         />
         <Text style={styles.headerTitle}>Your Matches</Text>
         <View style={{ width: 48 }} />
@@ -80,7 +91,12 @@ const MatchesScreen: React.FC<Props> = ({ navigation }) => {
         data={matches}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => <MatchCard match={item} />}
+        numColumns={2}
+        columnWrapperStyle={styles.columnWrapper}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <MatchCard match={item} />
+        )}
       />
     </View>
   );
@@ -89,51 +105,71 @@ const MatchesScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 5,
+    paddingTop: 15,
+    paddingBottom: 10,
+    backgroundColor: '#FFFFFF',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: '#333',
   },
   listContent: {
-    padding: 16,
+    padding: 12,
+    paddingBottom: 20,
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 15,
     fontSize: 16,
+    color: '#555',
   },
   emptyContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  backButtonEmpty: {
+    margin: 10,
+  },
+  emptyContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   emptyText: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
+    marginTop: 20,
     marginBottom: 10,
+    color: '#333',
   },
   emptySubtext: {
     fontSize: 16,
     textAlign: 'center',
-    color: '#666',
+    color: '#777',
     marginBottom: 30,
-  },
-  backButton: {
-    backgroundColor: '#4ecdc4',
+    lineHeight: 22,
   },
 });
 
